@@ -1,0 +1,34 @@
+# clojure-infix
+
+A simple numerical infix parser for clojure, mimicing the behaviour of clojure's read-string and load-string for simple numerical expressions writen in standard infix notation.
+
+supports most numerical opperations
+i.e. + - * /, "power of" operator as either ** or ^, and brackets.
+any function calls (e.g. sqrt(x)) are prefixed with Math/
+allows the use of symbols, and read-infix-string returns any found in the meta of the returned code
+
+## Usage
+
+user=> (require 'clojure-infix)                 
+nil
+user=> (clojure-infix/load-infix-string "1 + 1 * 2")
+3
+user=> (clojure-infix/read-infix-string "(1 + 1) * 2")
+(* (+ 1 1) 2)
+user=> (clojure-infix/read-infix-string "a + a")
+(+ a a)
+user=> (meta (clojure-infix/read-infix-string "a + a"))
+{:variables [a]}
+user=> (clojure-infix/read-infix-string "sqrt(2) ** 2")  
+(Math/pow (Math/sqrt 2) 2)
+
+## TODO
+
+* bitwise operations
+* allow functions to accept more than 1 input
+* keyword support?
+* TESTS!!!
+
+## License
+
+FIXME: write
