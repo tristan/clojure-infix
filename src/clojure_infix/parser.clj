@@ -15,6 +15,7 @@
 	\* 8
 	\/ 9
 	\^ 10
+	\, 11
 	\( 100}
        op
        0))
@@ -22,7 +23,7 @@
 (defn str-to-obj [string]
   (cond (not (string? string)) ; if it's not a string
 	(throw (Exception. "why are you passing a non string to a str-to-obj function?!"))
-	(re-find #"^[\+\-\*\/\^\%\(\)\<\>\=]$" string) ; if it's an operator
+	(re-find #"^[,\+\-\*\/\^\%\(\)\<\>\=]$" string) ; if it's an operator
 	(first string) ; convert it to a character
 	(= string "==")
 	\=
@@ -44,7 +45,7 @@
 (defn tokenise [infix]
   (map #(str-to-obj %)
        (filter #(and (nil? (re-find #"^[\s]+$" %)) (not (= "" %))) 
-	       (str-utils/re-partition #"[ \(\)\*\+\-\^\%\/]|\=\=|\>\=|\<\=|[\=\>\<]|[\w]+\(" infix))))
+	       (str-utils/re-partition #"[ \(\)\*\+\-\^\%\/,]|\=\=|\>\=|\<\=|[\=\>\<]|[\w]+\(" infix))))
 
 (defn char-to-symbol [char]
   ; convert operaters in chars to their equivalent symbols
@@ -58,6 +59,7 @@
 	\* '*
 	\/ '/
 	\^ 'Math/pow
+	\, 'vector
 	\% 'mod} char))
 
 (defn oper-join 
@@ -85,11 +87,11 @@
 	 expecting-value? true] ; value here means number? symbol? fn? seq? or (
     (when *debug* 
       (println "----------------------------")
-      (println tokens)
-      (println value-stack)
-      (println operator-stack)
-      (println variables)
-      (println expecting-value?))
+      (println "t" tokens)
+      (println "v" value-stack)
+      (println "o" operator-stack)
+      (println "v" variables)
+      (println "?" expecting-value?))
     (if (empty? tokens)
       (do
 	(when *debug* (println ".............pop............."))
@@ -109,7 +111,9 @@
 	      (recur remaining-tokens
 		     (conj value-stack 
 			   (if (fn? (first tokens))
-			     `(~((first tokens)) ~val)
+			     (if (and (seq? val) (= (first val) 'vector)) ; deal with ,s in fns
+			       `(~((first tokens)) ~@(rest val))
+			       `(~((first tokens)) ~val))
 			     val))
 		     operator-stack
 		     (cond (empty? variables) (vec vars) ; ARGH! vec...
@@ -156,7 +160,9 @@
 	  (throw (java.text.ParseException. (str "Expecting value type, instead found: \"" (first tokens)
 						 "\" <" (type (first tokens)) ">") 0))
 	  (and (char? (first tokens)) (not (= \( (first tokens))))
-	  (cond (= (first tokens) \)) ; if we have a close bracket
+	  (cond (= (first tokens) \,) ; if we have a , (TODO: this should only be allowed in functions)
+		(recur (rest tokens) value-stack (conj operator-stack \,) variables true)
+		(= (first tokens) \)) ; if we have a close bracket
 		(do
 		  (when *debug* (println "..............pop............."))
 		  [(rest tokens)
@@ -208,7 +214,7 @@
       )
     [(eval `(fn ~v ~f)) v]))
 
-(when *debug*
+(when false ;*debug*
 ;  (println ((first (parse-infix "1.0+2.0-3.0/4.0*5.0^6.0*7.0/8.0-9.0+10.0"))))
 ;  (parse-infix "1.0+2.0*3.0-1.0")
   (time
