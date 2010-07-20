@@ -33,7 +33,8 @@
 	\[
 	(re-find #"^[\-]*[\d]+$" string) ; if it's a number
 	(Integer/parseInt string)
-	(re-find #"^[\-]*[\d]+[.][\d]+$" string) ; if it's a decimal number
+	(or (re-find #"^[\-]*[\d]+[.][\d]+$" string)
+	    (re-find #"^[\-]*[\d]+[.][\d]+E[\-]*[\d]+$" string)); if it's a decimal number
 	(Double/parseDouble string)
 	(re-find #"^[a-zA-Z_]+[\w]*$" string) ; if it's a variable name
 	(symbol string) ; convert to a symbol
@@ -45,7 +46,7 @@
 (defn tokenise [infix]
   (map #(str-to-obj %)
        (filter #(and (nil? (re-find #"^[\s]+$" %)) (not (= "" %))) 
-	       (str-utils/re-partition #"[ \(\)\*\+\-\^\%\/,]|\=\=|\>\=|\<\=|[\=\>\<]|[\w]+\(" infix))))
+	       (str-utils/re-partition #"[ \(\)\*\+\^\%\/,]|(?<![\d]+E)[\-]|\=\=|\>\=|\<\=|[\=\>\<]|[\w]+\(" infix))))
 
 (defn char-to-symbol [char]
   ; convert operaters in chars to their equivalent symbols
@@ -67,7 +68,7 @@
      (let [[_ v] (oper-join ops- vals- -1)]
        (if (= (count v) 1)
 	 (first v)
-	 (throw (java.text.ParseException. "found multiple numbers/variables in succession with no operator" 0)))))
+	 (throw (java.text.ParseException. (str "found multiple numbers/variables in succession with no operator (" ops- vals- ")") 0)))))
   ([ops- vals- stop-at-op-weight]
   (if (or (empty? ops-) (<= (operator-weights (peek ops-)) stop-at-op-weight))
     [ops- vals-]
@@ -84,7 +85,7 @@
 	 value-stack []
 	 operator-stack []
 	 variables []
-	 expecting-value? true] ; value here means number? symbol? fn? seq? or (
+	 expecting-value? true] ; value here means number?, symbol?, fn?, seq? or (
     (when *debug* 
       (println "----------------------------")
       (println "t" tokens)
@@ -189,6 +190,9 @@
 	  (throw (java.text.ParseException. (str "Action for " (first tokens) "<" (type (first tokens)) "> not defined") 0))))))
 
 (defn parse [infix]
+  (if (or (nil? infix) (= "" (.trim infix))) 
+    (do (when *debug* (println "empty infix, returning nil") nil))
+    (do
   ; do some initial validation
   (when (odd? (count (filter #(or (= \( %) (= \) %)) infix))) 
     ; this doesn't catch people doing silly things like "2+3+4)+(5+6+7". However such cases are delt with post processing.
@@ -201,6 +205,7 @@
     (if (empty? r) ; if it's not empty, a close bracket has occured without a matching open bracket
       [f v]
       (throw (java.text.ParseException. (str "Formula contains unmatched parentheses") 0)))))
+    ))
 
 (defn parse-infix [infix]
   ; returns the list of variable names

@@ -3,7 +3,9 @@
 
 (defn read-infix-string [s]
   (let [[f v] (parser/parse s)]
-    (with-meta f {:variables v})))
+    (if (instance? clojure.lang.IObj f)
+      (with-meta f {:variables v})
+      f)))
 
 (defmacro load-infix-string [s]
   `(eval (read-infix-string ~s)))
