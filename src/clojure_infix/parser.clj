@@ -1,5 +1,5 @@
 (ns clojure-infix.parser
-  (:require [clojure.contrib [str-utils :as str-utils]]))
+  (:require [clojure-infix.utils :as str-utils]))
 
 (def *debug* false)
 

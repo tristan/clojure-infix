@@ -7,8 +7,17 @@ i.e. + - * /, "power of" operator as either ** or ^, and brackets.
 any function calls (e.g. sqrt(x)) are prefixed with Math/
 allows the use of symbols, and read-infix-string returns any found in the meta of the returned code
 
+## DISCLAIMER
+
+I have updated the code so it runs on clojure 1.6 using leiningen to start the repl, but as I've not worked on this or even clojure since v1.1, I cannot garantee the code makes any sense in the clojure 1.6 world, nor provide any support for it.
+
 ## Usage
 
+The functions `read-infix-string` and `load-infix-string` provide the same interface and functionality as the core clojure functions `read-string` and `load-string` respectively.
+
+## Example Usage 
+
+$ lein repl
 user=> (require 'clojure-infix)                 
 nil
 user=> (clojure-infix/load-infix-string "1 + 1 * 2")
@@ -17,6 +26,8 @@ user=> (clojure-infix/read-infix-string "(1 + 1) * 2")
 (* (+ 1 1) 2)
 user=> (clojure-infix/read-infix-string "a + a")
 (+ a a)
+user=> ((fn [a] (eval (clojure-infix/read-infix-string "a + a"))) 5)
+10
 user=> (meta (clojure-infix/read-infix-string "a + a"))
 {:variables [a]}
 user=> (clojure-infix/read-infix-string "sqrt(2) ** 2")  
